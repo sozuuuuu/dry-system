@@ -49,11 +49,6 @@ module Dry
       # @return [Pathname, nil]
       # @api private
       def component_file(component_path)
-        if default_namespace
-          namespace_path = default_namespace.gsub(DEFAULT_SEPARATOR, PATH_SEPARATOR)
-          component_path = "#{namespace_path}#{PATH_SEPARATOR}#{component_path}"
-        end
-
         component_file = full_path.join("#{component_path}#{RB_EXT}")
         component_file if component_file.exist?
       end

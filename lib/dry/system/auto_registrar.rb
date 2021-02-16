@@ -40,7 +40,7 @@ module Dry
 
       def components(component_dir)
         files(component_dir.full_path).map { |file_path|
-          Component.new_from_component_dir(
+          Component.new_from_file_path(
             relative_path(component_dir, file_path),
             component_dir,
             file_path,
@@ -60,6 +60,7 @@ module Dry
         Pathname(file_path)
           .relative_path_from(component_dir.full_path)
           .sub(RB_EXT, EMPTY_STRING)
+          .to_s
       end
 
       def register_component?(component)
