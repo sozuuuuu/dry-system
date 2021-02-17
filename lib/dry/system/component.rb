@@ -7,7 +7,6 @@ require "dry/inflector"
 require "dry/system/loader"
 require "dry/system/errors"
 require "dry/system/constants"
-require "dry/system/magic_comments_parser"
 
 module Dry
   module System
@@ -41,78 +40,6 @@ module Dry
       #   @return [Hash] component's options
       attr_reader :options
 
-      # Returns a component with a namespace and path provided from a file found within
-      # the given component dirs. If no file is found, a component is returned without
-      # these attributes.
-      #
-      # @return [Dry::System::Component]
-      # @api private
-      def self.locate(identifier, component_dirs, options = EMPTY_HASH)
-        options = DEFAULT_OPTIONS.merge(options)
-
-        component_path = identifier.to_s.gsub(options[:separator], PATH_SEPARATOR)
-
-        found_dir, found_path, found_namespace = component_dirs.detect { |dir|
-          # TODO: Refactor. Perhaps some aspect of component building responsibility would
-          # be better placed on `ComponentDir`, e.g.
-          # `ComponentDir#component_from_identifier` and
-          # `ComponentDir#component_from_path`
-          if dir.default_namespace
-            namespace_path = dir.default_namespace.gsub(DEFAULT_SEPARATOR, PATH_SEPARATOR)
-            namespaced_component_path = "#{namespace_path}#{PATH_SEPARATOR}#{component_path}"
-
-            if (component_file = dir.component_file(namespaced_component_path))
-              break [dir, component_file, dir.default_namespace]
-            end
-          end
-
-          if (component_file = dir.component_file(component_path))
-            break [dir, component_file, nil]
-          end
-        }
-
-        return new(identifier, options) unless found_path
-
-        new_from_component_dir(identifier, found_dir, found_path, options.merge(namespace: found_namespace))
-      end
-
-      # WIP: refactoring etc. to continue
-      def self.new_from_file_path(path_identifier, component_dir, file_path, options = EMPTY_HASH)
-        options = DEFAULT_OPTIONS.merge(options)
-
-        identifier = path_identifier.scan(WORD_REGEX).join(options[:separator])
-        namespace = nil
-
-        if component_dir.default_namespace
-          namespace_match = identifier.match(/^(?<remove_namespace>#{component_dir.default_namespace})(?<separator>\W)(?<identifier>.*)/)
-
-          if namespace_match&.[](:identifier)
-            identifier = namespace_match[:identifier]
-            namespace = component_dir.default_namespace
-          end
-        end
-
-        new_from_component_dir(identifier, component_dir, file_path, options.merge(namespace: namespace))
-      end
-
-      # @api private
-      def self.new_from_component_dir(identifier, component_dir, file_path, options = EMPTY_HASH)
-        # Replace default options (provided via args) with more component-local values
-        options = {
-          **DEFAULT_OPTIONS,
-          **options,
-          **component_dir.component_options,
-          **MagicCommentsParser.(file_path)
-        }
-
-        new(
-          identifier,
-          namespace: options.fetch(:namespace) { component_dir.default_namespace },
-          file_path: file_path,
-          **options
-        )
-      end
-
       # @api private
       def self.new(identifier, options = EMPTY_HASH)
         options = DEFAULT_OPTIONS.merge(options)
@@ -143,6 +70,10 @@ module Dry
       # @api private
       def self.remove_namespace_from_name(name, namespace)
         match_value = name.match(/^(?<remove_namespace>#{namespace})(?<separator>\W)(?<identifier>.*)/)
+
+        # if match_value
+        #   puts "Removing #{namespace} from #{name} -> #{match_value[:identifier]}"
+        # end
 
         match_value ? match_value[:identifier] : name
       end

@@ -622,12 +622,14 @@ module Dry
             return bootable_component
           end
 
-          Component.locate(
-            identifier,
-            component_dirs,
-            separator: config.namespace_separator,
-            inflector: config.inflector,
-          )
+          component = component_dirs.detect { |dir|
+            if (component = dir.component_from_identifier(identifier))
+              break component
+            end
+          }
+
+          # FIXME: why do we really need this fallback?
+          component || Component.new(identifier)
         end
       end
 
