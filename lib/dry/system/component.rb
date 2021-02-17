@@ -46,8 +46,6 @@ module Dry
 
         namespace, separator = options.values_at(:namespace, :separator)
 
-        identifier = extract_identifier(identifier, namespace, separator)
-
         path = identifier.gsub(separator, PATH_SEPARATOR)
         if namespace
           namespace = namespace.to_s.gsub(separator, PATH_SEPARATOR)
@@ -56,28 +54,6 @@ module Dry
 
         super(identifier, path: path, **options)
       end
-
-      # @api private
-      def self.extract_identifier(identifier, namespace, separator)
-        identifier = identifier.to_s
-
-        identifier = namespace ? remove_namespace_from_name(identifier, namespace) : identifier
-
-        identifier.scan(WORD_REGEX).join(separator)
-      end
-      private_class_method :extract_identifier
-
-      # @api private
-      def self.remove_namespace_from_name(name, namespace)
-        match_value = name.match(/^(?<remove_namespace>#{namespace})(?<separator>\W)(?<identifier>.*)/)
-
-        # if match_value
-        #   puts "Removing #{namespace} from #{name} -> #{match_value[:identifier]}"
-        # end
-
-        match_value ? match_value[:identifier] : name
-      end
-      private_class_method :remove_namespace_from_name
 
       # @api private
       def initialize(identifier, path:, file_path: nil, **options)
@@ -108,17 +84,6 @@ module Dry
       # @api private
       def file_exists?
         !!file_path
-      end
-
-      # @api private
-      def namespaced(namespace)
-        self.class.new(
-          identifier,
-          path: path,
-          file_path: nil,
-          **options,
-          namespace: namespace,
-        )
       end
 
       # @api private

@@ -597,7 +597,8 @@ module Dry
           elsif manual_registrar.file_exists?(component)
             manual_registrar.(component)
           elsif importer.key?(component.root_key)
-            load_imported_component(component.namespaced(component.root_key))
+            # load_imported_component(component.namespaced(component.root_key))
+            load_imported_component(component, component.root_key)
           end
 
           self
@@ -611,7 +612,17 @@ module Dry
           end
         end
 
-        def load_imported_component(component)
+        def load_imported_component(component, import_namespace)
+          container = importer[import_namespace]
+
+          # FIXME: hack
+          importable_identifier = component.identifier.gsub(/#{import_namespace}\./, "")
+          container.load_component(importable_identifier)
+
+          importer.(import_namespace, container)
+        end
+
+        def old_load_imported_component(component)
           container = importer[component.namespace]
           container.load_component(component.identifier)
           importer.(component.namespace, container)
